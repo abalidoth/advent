@@ -5,7 +5,8 @@ Various utilities for Advent of Code.
 import numpy as np
 import re
 from collections import Counter, defaultdict
-from itertools import product, combinations
+from itertools import product, combinations, permutations
+from aocd import get_data
 
 ALPHABET = list("abcdefghijklmnopqrstuvwxyz")
 VOWELS = list("aeiou")
