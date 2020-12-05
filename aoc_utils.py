@@ -62,6 +62,7 @@ class InstructionParser:
     Type characters:
     w: lowercase word [a-z]+ (returns string)
     p: phrase of lowercase words [a-z ]+ (returns string)
+    a: alphanumeric [0-9a-z]+ (returns string)
     n: nonnegative integer [0-9]+ (returns int)
     i: integer -?[0-9]+ (returns int)
     
@@ -69,11 +70,11 @@ class InstructionParser:
     
     "move to -13,34 and turn north"
     would get parsed to
-    ("move", {x:-13, y:34, direc:"north"})
+    {"rule": "move", x:-13, y:34, direc:"north"}
     
     "plant 4 dark blue flowers"
     would get parsed to
-    ("plant", {num:4, color:"dark blue"})
+    {"rule": plant", num:4, color:"dark blue"}
     
     Attributes:
     rules: list of (rule name, rule variables and types, compiled regex)
@@ -105,7 +106,7 @@ class InstructionParser:
             #escape any special characters before we tinker
             for c in SPECIAL_CHARS:
                 template=template.replace(c, "\\"+c)
-            tokens = re.split(r"(%[a-z][a-z0-9_]*:[wpni])", template) #split out the variable decs
+            tokens = re.split(r"(%[a-z][a-z0-9_]*:[wpnia])", template) #split out the variable decs
             variables = []
             pattern = ["^"]
             
@@ -115,7 +116,7 @@ class InstructionParser:
                 elif t[0]!="%":
                     pattern.append(t)
                 else:
-                    rule, mode =  re.fullmatch(r"%([a-z][a-z0-9_]*):([wpni])", t).groups()
+                    rule, mode =  re.fullmatch(r"%([a-z][a-z0-9_]*):([wpnia])", t).groups()
                     if mode == "p": #phrase, with possible spaces
                         pattern.append(r"([a-z]+(?: [a-z]+)*)")
                     elif mode == "w": #word, no spaces
@@ -124,6 +125,8 @@ class InstructionParser:
                         pattern.append(r"([0-9]+)")
                     elif mode == "i":
                         pattern.append(r"(-?[0-9]+)")
+                    elif mode == "a":
+                        pattern.append(r"([0-9a-z]+)")
                     else:
                         raise ValueError(f"the mode {mode} is not supported")
                     variables.append((rule, mode))
@@ -144,7 +147,7 @@ class InstructionParser:
             else:
                 out = {"rule": name}
                 for ((var_name, mode), var_value) in zip(variables, match.groups()):
-                    if mode == "p" or mode == "w":
+                    if mode == "p" or mode == "w" or mode == "a":
                         out[var_name] = var_value
                     elif mode == "n" or mode == "i":
                         out[var_name] = int(var_value)
@@ -163,4 +166,3 @@ class InstructionParser:
     def match_block(self, b, as_dict = False):
         """Apply match() to a newline-delimited block."""
         return [self.match(s, as_dict) for s in b.split("\n") if s!=""]
-                
